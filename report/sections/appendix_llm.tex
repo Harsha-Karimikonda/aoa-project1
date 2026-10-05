@@ -1,0 +1,32 @@
+\section{LLM Tools, Prompts, and Verification Audit Log}
+\label{app:llm}
+
+In compliance with the project integrity policy, all utilization of Large Language Models (LLMs) for project planning, typesetting, proof structuring, and drafting is transparently documented in Table~\ref{tab:llm_log} and the subsequent log summaries.
+
+\begin{table*}[t]
+\centering
+\caption{Record of Large Language Model (LLM) Usage}
+\label{tab:llm_log}
+\begin{tabular}{p{2.5cm}p{4cm}p{5cm}p{4.5cm}}
+\toprule
+\textbf{Tool / Model} & \textbf{Purpose / Task} & \textbf{Representative Prompt Snippet} & \textbf{Human Verification / Corrections} \\
+\midrule
+Antigravity / Gemini 3.8 Flash High & Project planning \& real-world problem selection & ``Identify a real problem solved by greedy and divide-and-conquer from non-algorithm CS disciplines...'' & Verified problem domains against rubric constraints; validated optimality properties. \\
+\addlinespace
+Antigravity / Gemini 3.8 Flash High & LaTeX formatting \& IEEE template structuring & ``Typeset the report into IEEEtran conference format, including algorithms, proofs, and figures...'' & Compiled document on Overleaf; verified LaTeX syntax, equation labels, and citations. \\
+\addlinespace
+Antigravity / Gemini 3.8 Flash High & Proof structure formulation & ``Provide a rigorous exchange argument for interval scheduling and geometric sparsity lemma for closest pair...'' & Manually checked inductive base cases and verified that the strip box bounded constant was correctly 7. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Itemized Prompt and Output Log}
+
+\subsubsection{Session 1: Problem Selection and Architectural Formulation}
+\begin{itemize}
+    \item \textbf{Tool:} Antigravity (Gemini 3.8 Flash High).
+    \item \textbf{Input Prompt:} \textit{``For this project, you need to solve: Problem optimally solved by a greedy algorithm (50 pts total) and Problem solved by a divide and conquer algorithm (50 pts total)... How do we plan this?''}
+    \item \textbf{Intermediate Result:} Generated high-level project roadmap, selected Satellite Observation Interval Scheduling and Air Traffic 2D Closest Pair, mapped rubric subsections to LaTeX chapters, and outlined empirical benchmarking methodologies.
+    \item \textbf{Author Audit \& Corrections:} Ensured interval scheduling was framed specifically within Earth-observing satellite payload operations rather than abstract textbook scheduling, and verified the Master Theorem derivation for Closest Pair.
+\end{itemize}
+

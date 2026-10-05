@@ -1,0 +1,70 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    tabsize=2,
+    showstringspaces=false,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red}
+}
+
+\begin{document}
+
+\title{Rigorous Algorithmic Paradigms in Modern Applied Computing: Greedy Optimization in Satellite Scheduling and Divide-and-Conquer in Collision Avoidance}
+
+\author{\IEEEauthorblockN{Author One}
+\IEEEauthorblockA{\textit{Department of Computer and Information Science and Engineering} \\
+\textit{University of Florida}\\
+Gainesville, Florida, USA \\
+email@ufl.edu}
+\and
+\IEEEauthorblockN{Author Two}
+\IEEEauthorblockA{\textit{Department of Computer and Information Science and Engineering} \\
+\textit{University of Florida}\\
+Gainesville, Florida, USA \\
+email@ufl.edu}
+}
+
+\maketitle
+
+\begin{abstract}
+Algorithmic design techniques provide foundational performance guarantees across modern computing systems. In this study, we investigate two fundamental paradigms—greedy optimization and divide-and-conquer—applied to critical real-world engineering domains. First, we model high-throughput observation scheduling for low-Earth orbit (LEO) satellites as an optimal interval scheduling problem over ground sets, establishing the optimality of the Earliest Finish Time (EFT) greedy strategy via an exchange argument and verifying its $\mathcal{O}(n \log n)$ scaling empirically. Second, we address real-time aircraft and unmanned aerial vehicle (UAV) collision detection by abstracting the airspace into a planar Euclidean metric space and applying the Bentley--Shamos divide-and-conquer closest-pair formulation. We present rigorous mathematical proofs of correctness, asymptotic runtime analyses, and empirical validations spanning extensive synthetic workloads, demonstrating exact concordance with theoretical bounds.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Greedy algorithms, Divide and conquer, Interval scheduling, Closest pair problem, Empirical runtime verification, Computational geometry.
+\end{IEEEkeywords}
+
+\input{sections/01_introduction.tex}
+\input{sections/02_greedy.tex}
+\input{sections/03_divide_conquer.tex}
+\input{sections/04_conclusion.tex}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\appendices
+\input{sections/appendix_code.tex}
+\input{sections/appendix_llm.tex}
+
+\end{document}
+

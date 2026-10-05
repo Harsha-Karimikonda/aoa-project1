@@ -1,0 +1,98 @@
+\section{Source Code Listings}
+\label{app:code}
+
+This appendix provides the Python source code utilized to implement and empirically benchmark the greedy and divide-and-conquer algorithms.
+
+\subsection{Greedy Interval Scheduling Implementation}
+\begin{lstlisting}[language=Python, caption={Greedy Earliest Finish Time Scheduler}]
+def greedy_interval_scheduling(intervals):
+    """
+    intervals: list of tuples (start, finish, id)
+    Returns: list of selected non-overlapping intervals
+    Time Complexity: O(n log n)
+    """
+    if not intervals:
+        return []
+    
+    # Sort intervals by finish time in non-decreasing order
+    sorted_intervals = sorted(intervals, key=lambda x: x[1])
+    
+    selected = [sorted_intervals[0]]
+    last_finish = sorted_intervals[0][1]
+    
+    for current in sorted_intervals[1:]:
+        start_time, finish_time = current[0], current[1]
+        if start_time >= last_finish:
+            selected.append(current)
+            last_finish = finish_time
+            
+    return selected
+\end{lstlisting}
+
+\subsection{Divide-and-Conquer Closest Pair Implementation}
+\begin{lstlisting}[language=Python, caption={2D Closest Pair Algorithm (Bentley--Shamos)}]
+import math
+
+def euclidean_dist(p1, p2):
+    return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
+
+def closest_pair_dnc(points):
+    """
+    points: list of (x, y) tuples
+    Returns: (min_dist, (point1, point2))
+    Time Complexity: O(n log n)
+    """
+    # Pre-sort by x and y coordinates
+    px = sorted(points, key=lambda p: p[0])
+    py = sorted(points, key=lambda p: p[1])
+    return _closest_pair_rec(px, py)
+
+def _closest_pair_rec(px, py):
+    n = len(px)
+    if n <= 3:
+        # Base case brute force
+        min_d = float('inf')
+        pair = None
+        for i in range(n):
+            for j in range(i + 1, n):
+                d = euclidean_dist(px[i], px[j])
+                if d < min_d:
+                    min_d = d
+                    pair = (px[i], px[j])
+        return min_d, pair
+
+    # Divide
+    mid = n // 2
+    mid_point = px[mid]
+    mid_x = mid_point[0]
+
+    qx = px[:mid]
+    rx = px[mid:]
+
+    mid_set = set(qx)
+    qy = [p for p in py if p in mid_set]
+    ry = [p for p in py if p not in mid_set]
+
+    # Conquer
+    dist_l, pair_l = _closest_pair_rec(qx, qy)
+    dist_r, pair_r = _closest_pair_rec(rx, ry)
+
+    if dist_l <= dist_r:
+        delta, best_pair = dist_l, pair_l
+    else:
+        delta, best_pair = dist_r, pair_r
+
+    # Combine: strip check within delta of mid_x
+    strip = [p for p in py if abs(p[0] - mid_x) < delta]
+    num_strip = len(strip)
+
+    for i in range(num_strip):
+        for j in range(i + 1, min(i + 8, num_strip)):
+            d = euclidean_dist(strip[i], strip[j])
+            if d < delta:
+                delta = d
+                best_pair = (strip[i], strip[j])
+
+    return delta, best_pair
+\end{lstlisting}
+
