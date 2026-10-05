@@ -1,98 +1,131 @@
-\section{Source Code Listings}
+\section{Source Code and Benchmark Listings}
 \label{app:code}
 
-This appendix provides the Python source code utilized to implement and empirically benchmark the greedy and divide-and-conquer algorithms.
+This appendix provides the complete Python source code used for algorithm execution, automated data generation, and empirical runtime verification. All code is also hosted in the public repository: \url{https://github.com/Harsha-Karimikonda/aoa-project1}.
 
-\subsection{Greedy Interval Scheduling Implementation}
-\begin{lstlisting}[language=Python, caption={Greedy Earliest Finish Time Scheduler}]
-def greedy_interval_scheduling(intervals):
-    """
-    intervals: list of tuples (start, finish, id)
-    Returns: list of selected non-overlapping intervals
-    Time Complexity: O(n log n)
-    """
+\subsection{Greedy Scheduler and Empirical Benchmark Harness}
+\begin{lstlisting}[language=Python, caption={Greedy Algorithm and Empirical Validation Harness}]
+import time, random, gc, csv, platform
+from typing import List, NamedTuple
+import numpy as np
+from scipy.optimize import curve_fit
+
+class Interval(NamedTuple):
+    start: float
+    finish: float
+    request_id: str
+
+def greedy_interval_scheduling(intervals: List[Interval]) -> List[Interval]:
     if not intervals:
         return []
-    
-    # Sort intervals by finish time in non-decreasing order
-    sorted_intervals = sorted(intervals, key=lambda x: x[1])
-    
+    sorted_intervals = sorted(intervals, key=lambda x: x.finish)
     selected = [sorted_intervals[0]]
-    last_finish = sorted_intervals[0][1]
-    
+    last_finish = sorted_intervals[0].finish
     for current in sorted_intervals[1:]:
-        start_time, finish_time = current[0], current[1]
-        if start_time >= last_finish:
+        if current.start >= last_finish:
             selected.append(current)
-            last_finish = finish_time
-            
+            last_finish = current.finish
     return selected
+
+def generate_random_intervals(n: int, max_time: float = 100000.0, rng=None):
+    if rng is None:
+        rng = random.Random(42)
+    intervals = []
+    for i in range(n):
+        s = rng.uniform(0, max_time)
+        dur = rng.uniform(1.0, 100.0)
+        intervals.append(Interval(start=s, finish=s + dur, request_id=f"req_{i}"))
+    return intervals
+
+def run_greedy_benchmark():
+    n_values = [100, 500, 1000, 5000, 10000, 25000, 50000, 100000, 250000]
+    trials = 5
+    rng = random.Random(42)
+    mean_times = []
+    
+    for n in n_values:
+        trial_times = []
+        for _ in range(trials):
+            data = generate_random_intervals(n, rng=rng)
+            gc.disable()
+            t0 = time.perf_counter()
+            _ = greedy_interval_scheduling(data)
+            t1 = time.perf_counter()
+            gc.enable()
+            trial_times.append(t1 - t0)
+        mean_times.append(float(np.mean(trial_times)))
+        
+    # Fit theoretical model f(n) = c * n * log2(n)
+    def model(n, c):
+        return c * n * np.log2(n)
+        
+    popt, _ = curve_fit(model, np.array(n_values), np.array(mean_times))
+    return popt[0], n_values, mean_times
 \end{lstlisting}
 
-\subsection{Divide-and-Conquer Closest Pair Implementation}
-\begin{lstlisting}[language=Python, caption={2D Closest Pair Algorithm (Bentley--Shamos)}]
-import math
+\subsection{Divide-and-Conquer Closest Pair and Benchmark Harness}
+\begin{lstlisting}[language=Python, caption={Divide-and-Conquer Algorithm and Verification Harness}]
+import math, time, random, gc
+from typing import List, Tuple
+import numpy as np
 
-def euclidean_dist(p1, p2):
+Point = Tuple[float, float]
+
+def euclidean_dist(p1: Point, p2: Point) -> float:
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
-def closest_pair_dnc(points):
-    """
-    points: list of (x, y) tuples
-    Returns: (min_dist, (point1, point2))
-    Time Complexity: O(n log n)
-    """
-    # Pre-sort by x and y coordinates
-    px = sorted(points, key=lambda p: p[0])
-    py = sorted(points, key=lambda p: p[1])
+def brute_force_closest_pair(points: List[Point]):
+    n = len(points)
+    if n < 2: return float('inf'), None
+    min_d, best_pair = float('inf'), None
+    for i in range(n):
+        for j in range(i + 1, n):
+            d = euclidean_dist(points[i], points[j])
+            if d < min_d: min_d, best_pair = d, (points[i], points[j])
+    return min_d, best_pair
+
+def closest_pair_dnc(points: List[Point]):
+    if len(points) < 2: return float('inf'), None
+    px = sorted(points, key=lambda p: (p[0], p[1]))
+    py = sorted(points, key=lambda p: (p[1], p[0]))
     return _closest_pair_rec(px, py)
 
-def _closest_pair_rec(px, py):
+def _closest_pair_rec(px: List[Point], py: List[Point]):
     n = len(px)
-    if n <= 3:
-        # Base case brute force
-        min_d = float('inf')
-        pair = None
-        for i in range(n):
-            for j in range(i + 1, n):
-                d = euclidean_dist(px[i], px[j])
-                if d < min_d:
-                    min_d = d
-                    pair = (px[i], px[j])
-        return min_d, pair
-
-    # Divide
+    if n <= 3: return brute_force_closest_pair(px)
     mid = n // 2
-    mid_point = px[mid]
-    mid_x = mid_point[0]
-
-    qx = px[:mid]
-    rx = px[mid:]
-
-    mid_set = set(qx)
-    qy = [p for p in py if p in mid_set]
-    ry = [p for p in py if p not in mid_set]
-
-    # Conquer
+    mid_x = px[mid][0]
+    qx, rx = px[:mid], px[mid:]
+    left_set = set(qx)
+    qy = [p for p in py if p in left_set]
+    ry = [p for p in py if p not in left_set]
+    
     dist_l, pair_l = _closest_pair_rec(qx, qy)
     dist_r, pair_r = _closest_pair_rec(rx, ry)
-
-    if dist_l <= dist_r:
-        delta, best_pair = dist_l, pair_l
-    else:
-        delta, best_pair = dist_r, pair_r
-
-    # Combine: strip check within delta of mid_x
+    delta, best_pair = (dist_l, pair_l) if dist_l <= dist_r else (dist_r, pair_r)
+    
     strip = [p for p in py if abs(p[0] - mid_x) < delta]
-    num_strip = len(strip)
-
-    for i in range(num_strip):
-        for j in range(i + 1, min(i + 8, num_strip)):
+    for i in range(len(strip)):
+        for j in range(i + 1, min(i + 8, len(strip))):
+            if strip[j][1] - strip[i][1] >= delta: break
             d = euclidean_dist(strip[i], strip[j])
-            if d < delta:
-                delta = d
-                best_pair = (strip[i], strip[j])
-
+            if d < delta: delta, best_pair = d, (strip[i], strip[j])
     return delta, best_pair
-\end{lstlisting}
 
+def run_dnc_benchmark():
+    n_values = [100, 500, 1000, 2500, 5000, 10000, 25000, 50000]
+    rng = random.Random(42)
+    mean_times = []
+    for n in n_values:
+        trial_times = []
+        for _ in range(5):
+            pts = [(rng.uniform(0, 10000), rng.uniform(0, 10000)) for _ in range(n)]
+            gc.disable()
+            t0 = time.perf_counter()
+            _ = closest_pair_dnc(pts)
+            t1 = time.perf_counter()
+            gc.enable()
+            trial_times.append(t1 - t0)
+        mean_times.append(float(np.mean(trial_times)))
+    return n_values, mean_times
+\end{lstlisting}

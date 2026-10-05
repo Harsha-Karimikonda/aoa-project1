@@ -3,7 +3,7 @@
 \subsection{Real-World Problem Identification (10 pts)}
 In satellite operations and space systems engineering, Earth-observing satellites in Low Earth Orbit (LEO) carry specialized optical and synthetic-aperture radar (SAR) payloads. Ground stations and scientific agencies submit requests to image specific terrestrial regions. Due to orbital dynamics and satellite velocity, each target ground location is visible only during a strict visibility window $[s_i, f_i)$, where $s_i$ denotes the acquisition start epoch and $f_i$ denotes the acquisition completion epoch.
 
-The onboard imaging instrument can capture only one observation at a time; slewing the payload and operating sensors concurrently during overlapping windows is physically impossible. Therefore, satellite mission operations must schedule the maximum number of feasible observation requests within a single orbit pass without temporal conflict.
+The onboard imaging instrument can capture only one observation at a time; operating sensors concurrently during overlapping windows is physically impossible. Therefore, satellite mission operations must schedule the maximum number of feasible observation requests within an orbit pass without temporal conflict.
 
 \subsection{Mathematical Abstraction (5 pts)}
 We abstract this operational scenario as the \textit{Interval Scheduling Problem} over ground sets.
@@ -73,21 +73,23 @@ By induction, Lemma 1 holds for all $r \in \{1, \dots, k\}$.
 Now assume for contradiction that $k < m$. By Lemma 1, $f(i_k) \le f(j_k)$. Since $m > k$, there exists an interval $j_{k+1} \in \mathcal{O}$. Since $\mathcal{O}$ is compatible, $s(j_{k+1}) \ge f(j_k) \ge f(i_k)$. Therefore, $j_{k+1}$ starts after $i_k$ finishes, meaning $j_{k+1}$ was compatible with all intervals in $S$. The greedy loop terminates only when no compatible intervals remain, contradicting the termination condition. Thus, $k \ge m$. Because $\mathcal{O}$ is optimal, $k \le m$. Hence $k = m$, proving that greedy produces an optimal schedule.
 \end{proof}
 
-\subsection{Problem Domain Translation (5 pts)}
+\subsection{Problem Domain Translation and Model Assumptions (5 pts)}
 In the operational context of satellite ground command:
 \begin{itemize}
-    \item \textbf{Sorting by Finish Time:} Mission planning sorts prospective target imagery requests by the exact timestamp when the target ground region leaves the field of view of the sensor.
-    \item \textbf{Greedy Choice Property:} By always scheduling the acquisition that concludes earliest, the satellite payload operator frees up the imaging sensor as early as possible in the orbit pass, maximizing remaining orbital time for future acquisitions.
-    \item \textbf{Compatibility Check:} The algorithm evaluates if the satellite can point its sensors at the next prospective ground target without requiring backward travel in time or conflicting with ongoing data capture ($s_i \ge f_{\text{last}}$).
+    \item \textbf{Sorting by Finish Time:} Mission planning sorts prospective target imagery requests by the exact timestamp when the target ground region leaves the sensor's field of view.
+    \item \textbf{Greedy Choice Property:} By scheduling the acquisition that concludes earliest, the payload operator frees up the imaging sensor as early as possible in the orbit pass, maximizing remaining orbital time for future acquisitions.
+    \item \textbf{Compatibility Check:} The algorithm verifies that the satellite can point its sensors at the next ground target without requiring backward travel in time or conflicting with ongoing data capture ($s_i \ge f_{\text{last}}$).
+    \item \textbf{Operational Assumptions \& Modeling Caveats:} In physical satellite missions \cite{bianchessi2007heuristic}, slewing the spacecraft attitude to re-aim the optical payload between distinct geographical targets requires non-zero attitude slew and settling time $\Delta t_{\text{slew}}(i, j) > 0$. The classical interval scheduling model abstracted here assumes that: (1) candidate requests are already verified as geometrically feasible, and (2) transition/slew overheads are either negligible or conservatively pre-padded into the request intervals $[s_i, f_i)$. When sequence-dependent slew times vary dynamically with target separation angles, the problem becomes an NP-hard orienteering variant requiring branch-and-cut or metaheuristic solvers.
 \end{itemize}
 
 \subsection{Implementation and Empirical Verification (5 pts)}
-We implemented Algorithm~\ref{alg:greedy_interval} in Python and evaluated empirical runtime scaling across request workloads spanning $n \in [10^2, 2.5 \times 10^5]$. At each scale, random intervals were sampled uniformly over a continuous temporal mission horizon across five independent trials. Figure~\ref{fig:greedy_runtime} illustrates the measured mean runtime alongside the non-linear least-squares fitted curve $t(n) = c \cdot n \log_2 n$ with scaling constant $c \approx 1.521 \times 10^{-8}$. The coefficient of determination ($R^2 = 0.9883$) demonstrates precise agreement between empirical performance and the theoretical bound.
+We implemented Algorithm~\ref{alg:greedy_interval} in Python (Python 3.9.6, Apple Silicon ARM64, macOS 15.8) and evaluated empirical runtime scaling across request workloads spanning $n \in [10^2, 2.5 \times 10^5]$. To ensure reproducibility, input intervals were generated deterministically using a fixed PRNG seed ($\text{seed} = 42$) over five independent trials per input size. Raw timing data is recorded in \texttt{report/data/greedy\_raw\_timings.csv}.
+
+The empirical measurements exhibit close consistency with the theoretical $\mathcal{O}(n \log n)$ curve (Figure~\ref{fig:greedy_runtime}), yielding a fitted scaling parameter $c \approx 1.510 \times 10^{-8}$ ($R^2 = 0.9879$).
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/greedy_runtime.pdf}
-\caption{Empirical wall-clock runtime vs. theoretical $\mathcal{O}(n \log n)$ prediction for greedy interval scheduling across $n \in [10^2, 2.5 \times 10^5]$ requests ($R^2 = 0.9883$).}
+\caption{Empirical wall-clock runtime vs. theoretical $\mathcal{O}(n \log n)$ regression curve for greedy interval scheduling across $n \in [10^2, 2.5 \times 10^5]$ requests ($R^2 = 0.9879$, seed $= 42$).}
 \label{fig:greedy_runtime}
 \end{figure}
-

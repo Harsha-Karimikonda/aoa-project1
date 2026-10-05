@@ -1,14 +1,14 @@
-\section{Divide-and-Conquer: Air Traffic Control Collision Avoidance}
+\section{Divide-and-Conquer: Spatial Proximity Screening for Airspace Monitoring}
 
 \subsection{Real-World Problem Identification (10 pts)}
-In avionics, air traffic management (ATM), and autonomous unmanned aerial vehicle (UAV) fleet operations, traffic collision avoidance systems (TCAS) continuously track spatial coordinates of all $n$ active aircraft within a designated terminal radar sector or flight corridor. A safety-critical requirement is detecting the minimum spatial separation between any pair of airborne vehicles in real time. If the minimum separation drops below a safety threshold $\tau$, an automatic resolution advisory is triggered to divert heading and prevent mid-air collision.
+In avionics, air traffic management (ATM), and unmanned aerial vehicle (UAV) fleet monitoring, surveillance architectures must periodically screen airspace for impending spatial conflicts. A foundational low-level computational primitive in this pipeline is \textit{spatial proximity screening}: determining the minimum instantaneous spatial separation between any pair of airborne vehicles in a planar radar snapshot. 
 
-When tracking thousands of airborne targets, a naive pairwise distance comparison across all $\binom{n}{2}$ pairs requires $\mathcal{O}(n^2)$ operations, causing unacceptable computational latency in high-density airspace. A divide-and-conquer formulation solves this problem in $\mathcal{O}(n \log n)$ time, ensuring deterministic real-time responsiveness.
+While full operational collision avoidance systems such as TCAS incorporate 3D altitude flight levels, 3D velocity vectors, flight intent extrapolation, and safety policy rules \cite{kuchar2000review}, instantaneous closest-pair detection serves as an essential broad-phase geometric filter. In high-density airspace or autonomous drone swarms tracking thousands of targets, a naive pairwise distance comparison across all $\binom{n}{2}$ pairs requires $\mathcal{O}(n^2)$ evaluations, creating a computational bottleneck. A divide-and-conquer formulation computes this geometric minimum separation in $\mathcal{O}(n \log n)$ time, providing a scalable screening primitive that quickly discards non-interacting targets before expensive kinematic trajectory predictors are invoked.
 
 \subsection{Mathematical Abstraction (5 pts)}
-We abstract the airspace as a 2D Euclidean metric space.
-\begin{definition}[Euclidean Point Set & Closest Pair]
-Let $P = \{p_1, p_2, \dots, p_n\} \subset \mathbb{R}^2$ be a set of $n$ points, where each point $p_i = (x_i, y_i)$ represents the planar radar coordinates of aircraft $i$. The Euclidean distance between $p_i$ and $p_j$ is given by:
+We abstract the instantaneous airspace radar snapshot as a 2D Euclidean metric space.
+\begin{definition}[Euclidean Point Set \& Closest Pair]
+Let $P = \{p_1, p_2, \dots, p_n\} \subset \mathbb{R}^2$ be a set of $n$ points, where each point $p_i = (x_i, y_i)$ represents the planar radar coordinates of vehicle $i$ at a fixed temporal epoch. The Euclidean distance between $p_i$ and $p_j$ is given by:
 \begin{equation}
 d(p_i, p_j) = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}.
 \end{equation}
@@ -19,7 +19,7 @@ d(p^*, q^*) = \min_{p, q \in P, p \neq q} d(p, q).
 \end{equation}
 
 \subsection{Algorithmic Solution (10 pts)}
-We employ the Bentley--Shamos divide-and-conquer algorithm. The points are partitioned by a median vertical split line into left and right subsets. The minimum distance is computed recursively in each half, followed by a linear-time boundary merge step.
+We employ the Bentley--Shamos divide-and-conquer algorithm \cite{bentley1976divide}. Points are partitioned by a median vertical split line into left and right subsets. The minimum distance is computed recursively in each half, followed by a linear-time boundary merge step.
 
 \begin{algorithm}[H]
 \caption{2D Closest Pair (Divide-and-Conquer)}
@@ -74,7 +74,7 @@ Algorithm~\ref{alg:closest_pair} returns a pair $(p^*, q^*) \in P$ with globally
 \begin{proof}
 We proceed by strong mathematical induction on $n = |P|$.
 \begin{itemize}
-    \item \textit{Base case ($n \le 3$):} The algorithm computes all $\binom{n}{2} \le 3$ pairwise distances directly, which trivially guarantees finding the minimum.
+    \item \textit{Base case ($n \le 3$):} The algorithm computes all $\binom{n}{2} \le 3$ pairwise distances directly, which guarantees finding the minimum.
     \item \textit{Inductive hypothesis:} Assume Algorithm~\ref{alg:closest_pair} correctly computes the closest pair for all point sets of size $k < n$.
     \item \textit{Inductive step:} The set $P$ is divided by the median line $L$ into subsets $Q$ and $R$, each of size at most $\lceil n/2 \rceil < n$. By the inductive hypothesis, recursive calls correctly return $\delta_L = \min_{p,q \in Q} d(p,q)$ and $\delta_R = \min_{p,q \in R} d(p,q)$. Let $\delta = \min(\delta_L, \delta_R)$. 
     
@@ -89,28 +89,30 @@ We proceed by strong mathematical induction on $n = |P|$.
 By induction, Algorithm~\ref{alg:closest_pair} correctly identifies the global minimum Euclidean distance.
 \end{proof}
 
-\subsection{Problem Domain Translation (5 pts)}
-In air traffic and drone fleet management:
+\subsection{Problem Domain Translation and Operational Scope (5 pts)}
+In airspace monitoring and drone fleet surveillance:
 \begin{itemize}
     \item \textbf{Spatial Partitioning:} Airspace is geographically bisected into eastern and western sectors by radar longitude.
-    \item \textbf{Subsector Safety:} Controllers independently confirm safety within each sector, identifying the closest internal aircraft pairs ($\delta_L, \delta_R$).
-    \item \textbf{Boundary Collision Window:} Safety hazards across sector boundaries can only occur if aircraft are within distance $\delta$ of the sector boundary. The algorithm filters boundary aircraft and performs immediate local neighborhood checks, avoiding global pairwise scans while guaranteeing that no potential collision is missed.
+    \item \textbf{Subsector Clearance:} Controllers independently confirm safety within each sector, identifying the closest internal aircraft pairs ($\delta_L, \delta_R$).
+    \item \textbf{Boundary Collision Window:} Spatial proximity hazards across sector boundaries can only occur if aircraft are within distance $\delta$ of the sector boundary. The algorithm filters boundary aircraft and performs immediate local neighborhood checks, avoiding quadratic global comparisons.
+    \item \textbf{Operational Scope \& Limitations:} This algorithm serves strictly as an instantaneous 2D geometric screening filter. It does not model vertical altitude separation (e.g., standard 1,000-ft vertical flight levels), 3D velocity vectors, flight turn dynamics, wind vectors, or regulatory safety resolution advisories. In an operational pipeline, pairs identified by this algorithm are dispatched to downstream kinematic trajectory-prediction engines.
 \end{itemize}
 
 \subsection{Implementation and Empirical Verification (5 pts)}
-We implemented Algorithm~\ref{alg:closest_pair} in Python alongside a baseline brute-force $\mathcal{O}(n^2)$ comparator. Benchmarking over $n \in [10^2, 5 \times 10^4]$ points distributed uniformly in planar space demonstrates that the divide-and-conquer implementation precisely scales with $\mathcal{O}(n \log n)$, yielding a regression fit constant $c \approx 2.568 \times 10^{-7}$ with $R^2 = 0.9997$ (Figure~\ref{fig:dnc_runtime}). Furthermore, comparing the divide-and-conquer implementation directly against the $\mathcal{O}(n^2)$ baseline illustrates dramatic divergence (Figure~\ref{fig:dnc_comparison}), yielding a $64.2\times$ speedup already at $n = 3,000$ points.
+We implemented Algorithm~\ref{alg:closest_pair} in Python (Python 3.9.6, Apple Silicon ARM64, macOS 15.8) alongside an exhaustive $\mathcal{O}(n^2)$ comparator. To guarantee reproducibility, synthetic 2D point clouds were generated using a documented pseudo-random number generator seed ($\text{seed} = 42$) across $n \in [10^2, 5 \times 10^4]$ with five repeated trials per scale. Raw measurements are recorded in \texttt{report/data/dnc\_raw\_timings.csv}.
+
+The empirical timing data shows close consistency with the theoretical $\mathcal{O}(n \log n)$ model (Figure~\ref{fig:dnc_runtime}), yielding a fitted scaling constant $c \approx 2.471 \times 10^{-7}$ ($R^2 = 0.9999$). Furthermore, comparing divide-and-conquer against the brute-force baseline illustrates the asymptotic divergence (Figure~\ref{fig:dnc_comparison}), yielding a $67.1\times$ empirical speedup at $n = 3,000$ points.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/divide_conquer_runtime.pdf}
-\caption{Empirical runtime scaling of 2D Closest Pair divide-and-conquer algorithm vs. theoretical $\mathcal{O}(n \log n)$ curve ($R^2 = 0.9997$).}
+\caption{Empirical runtime scaling of 2D Closest Pair divide-and-conquer algorithm vs. theoretical $\mathcal{O}(n \log n)$ regression curve ($R^2 = 0.9999$, seed $= 42$).}
 \label{fig:dnc_runtime}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/dnc_comparison.pdf}
-\caption{Empirical runtime comparison between $\mathcal{O}(n^2)$ exhaustive search and $\mathcal{O}(n \log n)$ divide-and-conquer demonstrating over $64\times$ speedup at $n=3,000$.}
+\caption{Empirical runtime comparison between $\mathcal{O}(n^2)$ exhaustive search and $\mathcal{O}(n \log n)$ divide-and-conquer demonstrating a $67.1\times$ speedup at $n=3,000$.}
 \label{fig:dnc_comparison}
 \end{figure}
-
